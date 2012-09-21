@@ -1,0 +1,6 @@
+Django==1.4.1
+django-cache-machine==0.6
+pyes==0.16
+
+-e git://github.com/mozilla/elasticutils.git@98f210e2b3fe2451b63ad6abbf50e8ab690ef5a3#egg=elasticutils
+-e git://github.com/clouserw/tower.git@1dfa7345019e79eb7dfce6315c0493e68e6b134a#egg=tower
