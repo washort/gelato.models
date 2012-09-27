@@ -25,6 +25,7 @@ class Translation(ModelBase):
     class Meta:
         db_table = 'translations'
         unique_together = ('id', 'locale')
+        app_label="translations"
 
     def __unicode__(self):
         return self.localized_string and unicode(self.localized_string) or ''
@@ -151,6 +152,7 @@ class TranslationSequence(models.Model):
 
     class Meta:
         db_table = 'translations_seq'
+        app_label= "translations"
 
 
 def delete_translation(obj, fieldname):
