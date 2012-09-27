@@ -5,7 +5,7 @@ from django.utils import translation
 import multidb
 
 from gelato.translations.models import Translation
-from translations.fields import TranslatedField
+from gelato.translations.fields import TranslatedField
 
 isnull = """IF(!ISNULL({t1}.localized_string), {t1}.{col}, {t2}.{col})
             AS {name}_{col}"""

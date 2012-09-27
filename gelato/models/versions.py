@@ -2,8 +2,8 @@ from django.db import models
 from gelato.translations.fields import PurifiedField
 from gelato.models.base import ModelBase
 
-class Version(ModelBase):
-    addon = models.ForeignKey('addons.Addon', related_name='versions')
+class VersionBase(ModelBase):
+    addon = models.ForeignKey('addons.Addon', related_name='_versions')
     license = models.ForeignKey('License', null=True)
     releasenotes = PurifiedField()
     approvalnotes = models.TextField(default='', null=True)

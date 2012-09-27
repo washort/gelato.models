@@ -10,7 +10,7 @@ from gelato.translations.fields import (LinkifiedField, TranslatedField,
                                         PurifiedField)
 from gelato.models.fields import DecimalCharField
 from gelato.models.base import OnChangeMixin, ModelBase
-from gelato.models.versions import Version
+from gelato.models.versions import VersionBase
 
 from gelato.constants import base
 
@@ -142,10 +142,10 @@ class AddonBase(OnChangeMixin, ModelBase):
     app_domain = models.CharField(max_length=255, blank=True, null=True,
                                   db_index=True)
 
-    _current_version = models.ForeignKey(Version, related_name='___ignore',
+    _current_version = models.ForeignKey(VersionBase, related_name='___ignore',
             db_column='current_version', null=True, on_delete=models.SET_NULL)
     # This is for Firefox only.
-    _backup_version = models.ForeignKey(Version, related_name='___backup',
+    _backup_version = models.ForeignKey(VersionBase, related_name='___backup',
             db_column='backup_version', null=True, on_delete=models.SET_NULL)
     _latest_version = None
     make_public = models.DateTimeField(null=True)
@@ -163,28 +163,28 @@ class AddonBase(OnChangeMixin, ModelBase):
 
     @staticmethod
     def __new__(cls, *args, **kw):
-        # Return a Webapp instead of an Addon if the `type` column says this is
-        # really a webapp.
-        try:
-            type_idx = Addon._meta._type_idx
-        except AttributeError:
-            type_idx = (idx for idx, f in enumerate(Addon._meta.fields)
-                        if f.attname == 'type').next()
-            Addon._meta._type_idx = type_idx
-        if ((len(args) == len(Addon._meta.fields)
-             and args[type_idx] == base.ADDON_WEBAPP)
-            or kw and kw.get('type') == base.ADDON_WEBAPP):
-            from gelato.models.webapp import Webapp
-            cls = Webapp
-        return super(Addon, cls).__new__(cls, *args, **kw)
+        # # Return a Webapp instead of an Addon if the `type` column says this is
+        # # really a webapp.
+        # try:
+        #     type_idx = AddonBase._meta._type_idx
+        # except AttributeError:
+        #     type_idx = (idx for idx, f in enumerate(AddonBase._meta.fields)
+        #                 if f.attname == 'type').next()
+        #     AddonBase._meta._type_idx = type_idx
+        # if ((len(args) == len(AddonBase._meta.fields)
+        #      and args[type_idx] == base.ADDON_WEBAPP)
+        #     or kw and kw.get('type') == base.ADDON_WEBAPP):
+        #     from gelato.models.webapp import Webapp
+        #     cls = Webapp
+        return super(AddonBase, cls).__new__(cls, *args, **kw)
 
     def __unicode__(self):
         return u'%s: %s' % (self.id, self.name)
 
     def __init__(self, *args, **kw):
-        super(Addon, self).__init__(*args, **kw)
+        super(AddonBase, self).__init__(*args, **kw)
         self._first_category = {}
 
     def save(self, **kw):
         self.clean_slug()
-        super(Addon, self).save(**kw)
+        super(AddonBase, self).save(**kw)
