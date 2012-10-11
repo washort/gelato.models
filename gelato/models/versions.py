@@ -41,7 +41,7 @@ class ApplicationsVersions(caching.base.CachingMixin, models.Model):
     class Meta:
         db_table = u'applications_versions'
         unique_together = (("application", "version"),)
-        app_label = 'applications'
+        app_label = 'versions'
 
     def __unicode__(self):
         if (waffle.switch_is_active('d2c-buttons') and
