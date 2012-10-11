@@ -263,9 +263,9 @@ class ManagerBase(caching.base.CachingManager, UncachedManagerBase):
             qs = qs.no_cache()
         return self._with_translations(qs)
 
-    def raw(self, raw_query, params=None, *args, **kwargs):
-        return CachingRawQuerySet(raw_query, self.model, params=params,
-                                  using=self._db, *args, **kwargs)
+    #def raw(self, raw_query, params=None, *args, **kwargs):
+    #    return CachingRawQuerySet(raw_query, self.model, params=params,
+    #                              using=self._db, *args, **kwargs)
 
 
 class ModelBase(SearchMixin, caching.base.CachingMixin, models.Model):
