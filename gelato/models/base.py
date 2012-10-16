@@ -1,3 +1,6 @@
+# monkeypatch django
+import gelato.models._fixes
+
 import contextlib
 import functools
 import threading
@@ -184,6 +187,7 @@ class TransformQuerySet(queryset_transform.TransformQuerySet):
             with skip_cache():
                 return fn(*args, **kw)
         return super(TransformQuerySet, self).transform(wrapper)
+
 
 class RawQuerySet(models.query.RawQuerySet):
     """A RawQuerySet with __len__."""

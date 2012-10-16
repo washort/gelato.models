@@ -184,7 +184,3 @@ class AddonBase(OnChangeMixin, ModelBase):
     def __init__(self, *args, **kw):
         super(AddonBase, self).__init__(*args, **kw)
         self._first_category = {}
-
-    def save(self, **kw):
-        self.clean_slug()
-        super(AddonBase, self).save(**kw)
