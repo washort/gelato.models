@@ -9,7 +9,7 @@ from gelato.models.base import ModelBase
 from gelato.models.applications import Application, AppVersion
 
 class VersionBase(ModelBase):
-    _addon = models.ForeignKey('addons.AddonBase', related_name='_versions', db_column='addon_id')
+    addon = models.ForeignKey('addons.AddonBase', related_name='_versions')
     license = models.ForeignKey('License', null=True)
     releasenotes = PurifiedField()
     approvalnotes = models.TextField(default='', null=True)
@@ -27,10 +27,6 @@ class VersionBase(ModelBase):
         ordering = ['-created', '-modified']
         app_label = 'versions'
 
-    @property
-    def addon_id(self):
-        return self._addon_id
-
 class ApplicationsVersions(caching.base.CachingMixin, models.Model):
 
     application = models.ForeignKey(Application)
@@ -45,7 +41,7 @@ class ApplicationsVersions(caching.base.CachingMixin, models.Model):
     class Meta:
         db_table = u'applications_versions'
         unique_together = (("application", "version"),)
-        app_label = 'applications'
+        app_label = 'versions'
 
     def __unicode__(self):
         if (waffle.switch_is_active('d2c-buttons') and
