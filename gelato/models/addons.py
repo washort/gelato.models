@@ -184,3 +184,27 @@ class AddonBase(OnChangeMixin, ModelBase):
     def __init__(self, *args, **kw):
         super(AddonBase, self).__init__(*args, **kw)
         self._first_category = {}
+
+
+    @property
+    def premium(self):
+        """
+        Returns the premium object which will be gotten by the transformer,
+        if its not there, try and get it. Will return None if there's nothing
+        there.
+        """
+        if not hasattr(self, '_premium'):
+            try:
+                self._premium = self.addonpremium
+            except AddonPremium.DoesNotExist:
+                self._premium = None
+        return self._premium
+
+class Charity(ModelBase):
+    name = models.CharField(max_length=255)
+    url = models.URLField(verify_exists=False)
+    paypal = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = 'charities'
+        app_label = 'addons'
