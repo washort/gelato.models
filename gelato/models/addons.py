@@ -1,18 +1,21 @@
 import collections
-
+import caching.base
 from django.conf import settings
+from django.core import urlresolvers
 from django.db import models
 from django.utils.translation import trans_real as translation
 from jinja2.filters import do_dictsort
 
 from tower import ugettext_lazy as _
+from gelato.constants import base
 from gelato.translations.fields import (LinkifiedField, TranslatedField,
                                         PurifiedField)
 from gelato.models.fields import DecimalCharField
 from gelato.models.base import OnChangeMixin, ModelBase
 from gelato.models.versions import VersionBase
+from gelato.models.users import UserProfileBase, UserForeignKey
+from gelato.models.utils import sorted_groupby
 
-from gelato.constants import base
 
 
 class AddonBase(OnChangeMixin, ModelBase):
@@ -128,9 +131,9 @@ class AddonBase(OnChangeMixin, ModelBase):
     get_satisfaction_product = models.CharField(max_length=255, blank=True,
                                                 null=True)
 
-    authors = models.ManyToManyField('users.UserProfile', through='AddonUser',
+    authors = models.ManyToManyField(UserProfileBase, through='AddonUser',
                                      related_name='addons')
-    categories = models.ManyToManyField('Category', through='AddonCategory')
+    categories = models.ManyToManyField('Category', through='AddonCategoryBase')
     dependencies = models.ManyToManyField('self', symmetrical=False,
                                           through='AddonDependency',
                                           related_name='addons')
@@ -208,3 +211,101 @@ class Charity(ModelBase):
     class Meta:
         db_table = 'charities'
         app_label = 'addons'
+
+class Category(ModelBase):
+    name = TranslatedField()
+    slug = models.SlugField(max_length=50, help_text='Used in Category URLs.')
+    type = models.PositiveIntegerField(db_column='addontype_id',
+                                       choices=do_dictsort(base.ADDON_TYPE))
+    application = models.ForeignKey('applications.Application', null=True,
+                                    blank=True)
+    count = models.IntegerField('Addon count', default=0)
+    weight = models.IntegerField(default=0,
+        help_text='Category weight used in sort ordering')
+    misc = models.BooleanField(default=False)
+
+    addons = models.ManyToManyField(AddonBase, through='AddonCategoryBase')
+
+    class Meta:
+        db_table = 'categories'
+        verbose_name_plural = 'Categories'
+        app_label = 'addons'
+
+    def __unicode__(self):
+        return unicode(self.name)
+
+    def flush_urls(self):
+        urls = ['*%s' % self.get_url_path(), ]
+        return urls
+
+    def get_url_path(self):
+        try:
+            type = base.ADDON_SLUGS[self.type]
+        except KeyError:
+            type = base.ADDON_SLUGS[base.ADDON_EXTENSION]
+        if settings.MARKETPLACE and self.type == base.ADDON_PERSONA:
+            #TODO: (davor) this is a temp stub. Return category URL when done.
+            return urlresolvers.reverse('themes.browse', args=[self.slug])
+        return urlresolvers.reverse('browse.%s' % type, args=[self.slug])
+
+    @staticmethod
+    def transformer(addons):
+        qs = (Category.uncached.filter(addons__in=addons)
+              .extra(select={'addon_id': 'addons_categories.addon_id'}))
+        cats = dict((addon_id, list(cs))
+                    for addon_id, cs in sorted_groupby(qs, 'addon_id'))
+        for addon in addons:
+            addon.all_categories = cats.get(addon.id, [])
+
+class AddonCategoryBase(caching.base.CachingMixin, models.Model):
+    addon = models.ForeignKey(AddonBase)
+    category = models.ForeignKey('Category')
+    feature = models.BooleanField(default=False)
+    feature_locales = models.CharField(max_length=255, default='', null=True)
+
+    objects = caching.base.CachingManager()
+
+    class Meta:
+        db_table = 'addons_categories'
+        unique_together = ('addon', 'category')
+        app_label = 'addons'
+
+    def flush_urls(self):
+        urls = ['*/addon/%d/' % self.addon_id,
+                '*%s' % self.category.get_url_path(), ]
+        return urls
+
+class AddonUser(caching.base.CachingMixin, models.Model):
+    addon = models.ForeignKey(AddonBase)
+    user = UserForeignKey()
+    role = models.SmallIntegerField(default=base.AUTHOR_ROLE_OWNER,
+                                    choices=base.AUTHOR_CHOICES)
+    listed = models.BooleanField(_(u'Listed'), default=True)
+    position = models.IntegerField(default=0)
+
+    objects = caching.base.CachingManager()
+
+    def __init__(self, *args, **kwargs):
+        super(AddonUser, self).__init__(*args, **kwargs)
+        self._original_role = self.role
+        self._original_user_id = self.user_id
+
+    class Meta:
+        db_table = 'addons_users'
+        app_label = 'addons'
+
+    def flush_urls(self):
+        return self.addon.flush_urls() + self.user.flush_urls()
+
+
+class AddonDependency(models.Model):
+    addon = models.ForeignKey(AddonBase,
+                              related_name='addons_dependencies')
+    dependent_addon = models.ForeignKey(AddonBase,
+                                        related_name='dependent_on')
+
+    class Meta:
+        db_table = 'addons_dependencies'
+        unique_together = ('addon', 'dependent_addon')
+        app_label = 'addons'
+

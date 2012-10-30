@@ -1,3 +1,5 @@
+import itertools
+import operator
 import html5lib
 from html5lib.serializer.htmlserializer import HTMLSerializer
 import jingo
@@ -63,5 +65,16 @@ def truncate(s, length=255, killwords=True, end='...'):
     if hasattr(s, '__truncate__'):
         return s.__truncate__(length, killwords, end)
     return jinja2.filters.do_truncate(smart_unicode(s), length, killwords, end)
+
+
+def sorted_groupby(seq, key):
+    """
+    Given a sequence, we sort it and group it by a key.
+
+    key should be a string (used with attrgetter) or a function.
+    """
+    if not hasattr(key, '__call__'):
+        key = operator.attrgetter(key)
+    return itertools.groupby(sorted(seq, key=key), key=key)
 
 

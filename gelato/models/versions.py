@@ -3,9 +3,10 @@ import waffle
 from tower import ugettext_lazy as _
 
 from django.db import models
-from gelato.translations.fields import PurifiedField
+from gelato.translations.fields import (LinkifiedField, TranslatedField,
+                                        PurifiedField)
 from gelato.constants.applications import APP_IDS
-from gelato.models.base import ModelBase
+from gelato.models.base import ModelBase, ManagerBase
 from gelato.models.applications import Application, AppVersion
 
 class VersionBase(ModelBase):
@@ -50,6 +51,38 @@ class ApplicationsVersions(caching.base.CachingMixin, models.Model):
             return _(u'{app} {min} and later').format(app=self.application,
                                                       min=self.min)
         return u'%s %s - %s' % (self.application, self.min, self.max)
+
+class LicenseManager(ManagerBase):
+
+    def builtins(self):
+        return self.filter(builtin__gt=0).order_by('builtin')
+
+
+class License(ModelBase):
+    OTHER = 0
+
+    name = TranslatedField(db_column='name')
+    url = models.URLField(null=True, verify_exists=False)
+    builtin = models.PositiveIntegerField(default=OTHER)
+    text = LinkifiedField()
+    on_form = models.BooleanField(default=False,
+        help_text='Is this a license choice in the devhub?')
+    some_rights = models.BooleanField(default=False,
+        help_text='Show "Some Rights Reserved" instead of the license name?')
+    icons = models.CharField(max_length=255, null=True,
+        help_text='Space-separated list of icon identifiers.')
+
+    objects = LicenseManager()
+
+    class Meta:
+        db_table = 'licenses'
+        app_label = 'versions'
+
+    def __unicode__(self):
+        return unicode(self.name)
+
+
+
 
 import re
 

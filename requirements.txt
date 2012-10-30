@@ -1,6 +1,11 @@
+bleach==1.1.5
 Django==1.4.1
 django-cache-machine==0.6
+django-statsd-mozilla==0.3.8
 pyes==0.16
 
 -e git://github.com/mozilla/elasticutils.git@98f210e2b3fe2451b63ad6abbf50e8ab690ef5a3#egg=elasticutils
 -e git://github.com/clouserw/tower.git@1dfa7345019e79eb7dfce6315c0493e68e6b134a#egg=tower
+-e git://github.com/jbalogh/django-queryset-transform@a1ba6ae41bd86f5bb9ff66fb56614e0fafe6e022#egg=django-queryset-transform
+-e git://github.com/andymckay/gelato.constants.git#egg=gelato.constants
+-e git://github.com/fwenzel/django-mozilla-product-details.git@36ef06539d6b34c4f345fd0d3e16937d0db9a752#egg=django-mozilla-product-details
