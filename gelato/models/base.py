@@ -38,24 +38,26 @@ class SearchMixin(object):
         return indexes.get(cls._meta.db_table) or indexes['default']
 
     @classmethod
-    def index(cls, document, id=None, bulk=False, force_insert=False):
+    def index(cls, document, id=None, bulk=False, force_insert=False,
+              index=None):
         """Wrapper around pyes.ES.index."""
         elasticutils.get_es().index(
-            document, index=cls._get_index(), doc_type=cls._meta.db_table,
-            id=id, bulk=bulk, force_insert=force_insert)
+            document, index=index or cls._get_index(),
+            doc_type=cls._meta.db_table, id=id, bulk=bulk,
+            force_insert=force_insert)
 
     @classmethod
-    def unindex(cls, id):
+    def unindex(cls, id, index=None):
         es = elasticutils.get_es()
         try:
-            es.delete(cls._get_index(), cls._meta.db_table, id)
+            es.delete(index or cls._get_index(), cls._meta.db_table, id)
         except pyes.exceptions.NotFoundException:
             # Item wasn't found, whatevs.
             pass
 
     @classmethod
-    def search(cls):
-        return search.ES(cls, cls._get_index())
+    def search(cls, index=None):
+        return search.ES(cls, index or cls._get_index())
 
 
 class _NoChangeInstance(object):
@@ -126,7 +128,15 @@ class OnChangeMixin(object):
             Any call to instance.save() or instance.update() within a callback
             will not trigger any change handlers.
 
+        .. note::
+
+            Duplicates based on function.__name__ are ignored for a given
+            class.
         """
+        existing = _on_change_callbacks.get(cls, [])
+        if callback.__name__ in [e.__name__ for e in existing]:
+            return callback
+
         _on_change_callbacks.setdefault(cls, []).append(callback)
         return callback
 
@@ -292,6 +302,13 @@ class ModelBase(SearchMixin, caching.base.CachingMixin, models.Model):
 
     def get_absolute_url(self, *args, **kwargs):
         return self.get_url_path(*args, **kwargs)
+
+    def reload(self):
+        """Reloads the instance from the database."""
+        from_db = self.__class__.objects.get(id=self.id)
+        for field in self.__class__._meta.fields:
+            setattr(self, field.name, getattr(from_db, field.name))
+        return self
 
     def update(self, **kw):
         """
